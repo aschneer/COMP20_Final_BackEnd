@@ -1,0 +1,28 @@
+- Database
+    - routes for:
+        - post offer
+            - HTTP POST
+            - path: '/sendOffer'
+            - parameters:
+                - {"provider":string, "food":string, "address":string, "when":Date}
+            - returns:
+                - _id if OK!
+                - 300 if BAD!
+        - claim offer
+            - HTTP POST
+            - path: '/claimOffer'
+            - paramters:
+                - {"_id":_id}
+        - get offers
+            - HTTP GET
+            - path '/offers.json?provider=name'
+        - request offers
+            - HTTP GET
+            - path '/allOffers'
+            - returns:
+                [{"provider":string, "food":string, "address":string, "when":Date}, ...]
+        - request claimed offers
+            - HTTP GET 
+            - path '/claimedOffers?provider=name'
+            - returns:
+                - [{"provider":string, "food":string, "address":string, "when":Date, "by":string}, ...]
