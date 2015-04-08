@@ -9,12 +9,12 @@ app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// var mongoUri = process.env.MONGOLAB_URI || process.env.MONGOHQ_URL || 'mongodb://localhost:27017/';
-// var MongoClient = require('mongodb').MongoClient;
-// MongoClient.connect(mongoUri, function(er, connection) {
-//     assert.equal(null, er);
-//     db = connection;
-// });
+var mongoUri = process.env.MONGOLAB_URI || process.env.MONGOHQ_URL || 'mongodb://localhost:27017/';
+var MongoClient = require('mongodb').MongoClient;
+MongoClient.connect(mongoUri, function(er, connection) {
+    assert.equal(null, er);
+    db = connection;
+});
 
 app.get('/', function(req, res) {
     res.send("steve!");
@@ -22,6 +22,11 @@ app.get('/', function(req, res) {
 
 // sends an offer to the database
 app.post('/sendOffer', function(req, res) {
+    db.collections('offers', function(er, offers) {
+        asser.equal(null, er);
+        
+    });
+
     res.send('sendoffer!');
 });
 

@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>C20T3FDB Tests</title>
+    <meta charset="utf-8" />
+</head>
+<body>
+    <div id="map-canvas"></div>
+    <script type="text/javascript"> 
+        var base_URL = "http://localhost:5000/"; // local
+        // var base_URL = "https://c20t3fdb.herokuapp.com/"; // remote
+
+        // tests /sendOffer route
+        test_sendOffer = function() {
+            var url = base_URL + 'sendOffer';
+            console.log("steve");
+        };
+
+        test_claimOffer = function() {
+            var url = base_URL + 'claimOffer';
+            console.log("steve");
+        };
+
+        test_unclaimedOffers = function() {
+            var url = base_URL + 'unclaimedOffers';
+            console.log("steve");
+        };
+
+        test_claimedOffers = function() {
+            var url = base_URL + 'claimedOffers';
+            console.log("steve");
+        };
+
+        test_allOffers = function() {
+            var url = base_URL + 'allOffers';
+            console.log("steve");
+        };
+
+        doRequest = function(method, url, params) {
+            var res = new XMLHttpRequest();
+            res.open(method, url, true);
+            res.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+            // Call a function when the state changes.
+            res.onreadystatechange = function() {
+                if (res.readyState == 4 && res.status == 200) {
+                    return res.responseText;
+                }
+            };
+            res.send(params);
+        };
+
+        test_all = function() {
+            test_sendOffer();
+            test_claimOffer();
+            test_unclaimedOffers();
+            test_claimedOffers();
+            test_allOffers();
+        };
+
+        test_all();
+    </script>
+</body>
+</html>
