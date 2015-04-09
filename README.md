@@ -1,28 +1,31 @@
-- Database
+Database
+
     - routes for:
-        - post offer
+        - '/sendOffer'
             - HTTP POST
-            - path: '/sendOffer'
             - parameters:
                 - {"provider":string, "food":string, "address":string, "when":Date}
             - returns:
-                - _id if OK!
+                - 200 if OK!
                 - 300 if BAD!
-        - claim offer
+        - '/claimOffer'
             - HTTP POST
-            - path: '/claimOffer'
             - paramters:
-                - {"_id":_id}
-        - get offers
+                - {"_id":_id, "login":login}
+            - returns:
+                - 200 if OK!
+                - 300 if BAD!
+        - '/myOffers.json?login=name'
             - HTTP GET
-            - path '/offers.json?provider=name'
-        - request offers
+            - returns all offers claimed by a given login
+        - '/providerOffers.json?provider=name&claimed=bool'
             - HTTP GET
-            - path '/allOffers'
+            - returns all offers for a provider, claimed and unclaimed
+        - '/allOffers'
+            - HTTP GET
             - returns:
                 [{"provider":string, "food":string, "address":string, "when":Date}, ...]
-        - request claimed offers
-            - HTTP GET 
-            - path '/claimedOffers?provider=name'
-            - returns:
-                - [{"provider":string, "food":string, "address":string, "when":Date, "by":string}, ...]
+
+Status:
+
+    - All routes check for parameters.

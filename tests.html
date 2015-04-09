@@ -13,7 +13,16 @@
         // tests /sendOffer route
         test_sendOffer = function() {
             var url = base_URL + 'sendOffer';
-            console.log("steve");
+            // var params = {};
+            // params.provider = 'steverson';
+            // params.food = 'stevefood';
+            // params.address = '84 James Avenue';
+            // params.when = '8PM';
+
+            var params = "provider=" + 'steverson' + '&food=' + 'stevefood' + '&address=' + '84 James Avenue' + '&when=' + "oclock";
+
+            result = doRequest('POST', url, params);
+            console.log(result);
         };
 
         test_claimOffer = function() {
@@ -37,25 +46,25 @@
         };
 
         doRequest = function(method, url, params) {
-            var res = new XMLHttpRequest();
-            res.open(method, url, true);
-            res.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            var req = new XMLHttpRequest();
+            req.open(method, url, true);
+            console.log('dein params: ', params);
+            req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
-            // Call a function when the state changes.
-            res.onreadystatechange = function() {
-                if (res.readyState == 4 && res.status == 200) {
-                    return res.responseText;
+            req.onreadystatechange = function() {
+                if (req.readyState == 4 && req.status == 200) {
+                    return req.responseText;
                 }
             };
-            res.send(params);
+            req.send(params);
         };
 
         test_all = function() {
             test_sendOffer();
-            test_claimOffer();
-            test_unclaimedOffers();
-            test_claimedOffers();
-            test_allOffers();
+            // test_claimOffer();
+            // test_unclaimedOffers();
+            // test_claimedOffers();
+            // test_allOffers();
         };
 
         test_all();

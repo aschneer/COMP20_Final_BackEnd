@@ -16,38 +16,64 @@ MongoClient.connect(mongoUri, function(er, connection) {
     db = connection;
 });
 
-app.get('/', function(req, res) {
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+
+app.get('/', function(req, res, next) {
     res.send("steve!");
 });
 
 // sends an offer to the database
-app.post('/sendOffer', function(req, res) {
-    db.collections('offers', function(er, offers) {
-        asser.equal(null, er);
-        
-    });
+app.post('/sendOffer', function(req, res, next) {
+    var data = req.body;
+    if (data.hasOwnProperty('provider') && data.hasOwnProperty('food') && data.hasOwnProperty('address') && data.hasOwnProperty('when')) {
+        // Insert
 
-    res.send('sendoffer!');
+        // db.collection('offers', function(er, offers) {
+        //     assert.equal(null, er);
+
+        // });
+        res.sendStatus(200);
+    } else {
+        res.send('bad sendOffer POST yo');
+    }
 });
 
 // removes offer from unclaimed; adds it to claimed
-app.post('/claimOffer', function(req, res) {
-    res.send('claim offer!');
+app.post('/claimOffer', function(req, res, next) {
+    var data = req.body;
+    if (data.hasOwnProperty('_id') && data.hasOwnProperty('login')) {
+        res.sendStatus(200);
+    } else {
+        res.send('bad claimOffer POST yo');
+    }
 });
 
-// returns the unclaimed, untimedout offers for a specific provider
-app.get('/unclaimedOffers.json', function(req, res) {
-    res.send("provider's offers!");
+// returns list of claimed offers for a specific login
+app.get('/myOffers.json', function(req, res, next) {
+    var query = req.query;
+    if (data.hasOwnProperty('login')) {
+        res.sendStatus(200);
+    } else {
+        res.send('bad myOffers GET yo');
+    }
 });
 
-// sends all untimedout, claimed offers for a specific provider
-app.get('/claimedOffers', function(req, res) {
-    res.send('claimed offers!')
+// returns the untimedout offers for a specific provider, either claimed or unclaimed
+app.get('/providerOffers.json', function(req, res, next) {
+    var query = req.query;
+    if (query.hasOwnProperty('provider') && query.hasOwnProperty('claimed')) {
+        res.sendStatus(200);
+    } else {
+        res.send('bad unclaimedOffers.json GET yo')
+    }
 });
-
 
 // sends all unclaimed, untimedout offers
-app.get('/allOffers', function(req, res) {
+app.get('/allOffers', function(req, res, next) {
     res.send('all offers!');
 });
 
