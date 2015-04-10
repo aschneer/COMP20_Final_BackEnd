@@ -23,7 +23,30 @@ app.use(function(req, res, next) {
 });
 
 app.get('/', function(req, res, next) {
-    res.send("steve!");
+    res.set('Content-Type', 'text/html');
+    var page = '<!DOCTYPE HTML><html>';
+    page += '<head style="margin:0 0;width:100%;height:100%;">';
+    page += '<title>Web Programming Spring 2015 Team 3 Food db</title>';
+    page += '</head>';
+    page += '<body style="background:#444444;width:600px;height:100%;margin:0 auto;">';
+    db.collection('offers', function(er, offers) {
+        // assert.equal(er, null);
+        offers.find({}, {limit:20 /*, sort: [['created_at',-1]]*/}).toArray(function(err, log) {
+            // assert.equal(null, err);
+            page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Food Offers Logged</h1>';
+            page += '<ol>'
+
+            for (var i = 0; i < log.length; i++) {
+                s = '<span style="color:#e67e22">' + log[i].provider + '</span> ';
+                s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ' 
+                s += 'at <span style="color:#27ae60">' + log[i].address + '</span>'; 
+                page += '<li>' + s + '</li>';
+            }
+            page += '</ol>'
+        });
+    });
+    page += "</body></html>";    
+    res.send(page);
 });
 
 // sends an offer to the database

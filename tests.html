@@ -13,16 +13,9 @@
         // tests /sendOffer route
         test_sendOffer = function() {
             var url = base_URL + 'sendOffer';
-            // var params = {};
-            // params.provider = 'steverson';
-            // params.food = 'stevefood';
-            // params.address = '84 James Avenue';
-            // params.when = '8PM';
-
             var params = "provider=" + 'steverson' + '&food=' + 'stevefood' + '&address=' + '84 James Avenue' + '&when=' + "oclock";
 
-            result = doRequest('POST', url, params);
-            console.log(result);
+            doRequest('POST', url, params);
         };
 
         test_claimOffer = function() {
@@ -53,6 +46,7 @@
 
             req.onreadystatechange = function() {
                 if (req.readyState == 4 && req.status == 200) {
+                    console.log('sendin back woop');
                     return req.responseText;
                 }
             };
