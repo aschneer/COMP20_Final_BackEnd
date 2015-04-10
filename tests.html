@@ -45,8 +45,10 @@
             req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
             req.onreadystatechange = function() {
+                console.log('ready? ' + req.readyState);
+                console.log('status? ' + req.status);
+                console.log('txt? ' + req.responseText);
                 if (req.readyState == 4 && req.status == 200) {
-                    console.log('sendin back woop');
                     return req.responseText;
                 }
             };

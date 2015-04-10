@@ -29,13 +29,12 @@ app.get('/', function(req, res, next) {
     page += '<title>Web Programming Spring 2015 Team 3 Food db</title>';
     page += '</head>';
     page += '<body style="background:#444444;width:600px;height:100%;margin:0 auto;">';
+    page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Food Offers Logged</h1>';
     db.collection('offers', function(er, offers) {
         // assert.equal(er, null);
         offers.find({}, {limit:20 /*, sort: [['created_at',-1]]*/}).toArray(function(err, log) {
             // assert.equal(null, err);
-            page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Food Offers Logged</h1>';
             page += '<ol>'
-
             for (var i = 0; i < log.length; i++) {
                 s = '<span style="color:#e67e22">' + log[i].provider + '</span> ';
                 s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ' 
@@ -59,8 +58,10 @@ app.post('/sendOffer', function(req, res, next) {
         //     assert.equal(null, er);
 
         // });
-        res.sendStatus(200);
+        res.status(200);
+        res.send("so much steve");
     } else {
+        console.log('not it all');
         res.send('bad sendOffer POST yo');
     }
 });
