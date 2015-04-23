@@ -54,8 +54,6 @@ app.post('/sendOffer', function(req, res, next) {
     if (data.hasOwnProperty('provider') && data.hasOwnProperty('food') && data.hasOwnProperty('address') && data.hasOwnProperty('when')) {
         var toInsert = {'provider': data.provider, 'food': data.food, 'address': data.address, 'when': data.when};
 
-
-
         // Insert
 
         // UNTESTED AT ALL; QUANTITY HANDLING WOULD MAKE THIS SIMPLER
@@ -134,9 +132,9 @@ app.post('/claimOffer', function(req, res, next) {
             });
         });
 
-        db.collection('offers', function(er, offers) {
+        db.collection('claims', function(er, offers) {
             assert.equal(null, er);
-            offers.findOne(toInsert, function(err, cursor) {
+            claims.findOne(toInsert, function(err, cursor) {
                 assert.equal(null, err);
 
                 // additional attributes for server manipulation but not order identification
@@ -157,7 +155,6 @@ app.post('/claimOffer', function(req, res, next) {
             });
         });
 
-
         res.sendStatus(200);
     } else {
         res.send('bad claimOffer POST yo');
@@ -165,28 +162,57 @@ app.post('/claimOffer', function(req, res, next) {
 });
 
 // returns list of claimed offers for a specific login
-app.get('/myOffers.json', function(req, res, next) {
+app.get('/userOffers', function(req, res, next) {
     var query = req.query;
     if (data.hasOwnProperty('login')) {
-        res.sendStatus(200);
+        db.collection('claims', function(er, offers) {
+            assert.equal(er, null);
+            offers.find({'login': query.login}, {sort: [['when',-1]]}).toArray(function(err, log) {
+                assert.equal(null, err);
+                res.send(log);
+            });
+        });
     } else {
         res.send('bad myOffers GET yo');
     }
 });
 
 // returns the untimedout offers for a specific provider, either claimed or unclaimed
-app.get('/providerOffers.json', function(req, res, next) {
+app.get('/providerOffers', function(req, res, next) {
     var query = req.query;
     if (query.hasOwnProperty('provider') && query.hasOwnProperty('claimed')) {
-        res.sendStatus(200);
+        if (query.claimed === true) {
+            db.collection('claims', function(er, offers) {
+                assert.equal(er, null);
+                offers.find({'provider': query.provider}, {sort: [['when',-1]]}).toArray(function(err, log) {
+                    assert.equal(null, err);
+                    res.send(log);
+                });
+            });
+        } else {
+            db.collection('offers', function(er, offers) {
+                assert.equal(er, null);
+                offers.find({'provider': query.provider}, {sort: [['when',-1]]}).toArray(function(err, log) {
+                    assert.equal(null, err);
+                    res.send(log);
+                });
+            });
+        }
     } else {
         res.send('bad unclaimedOffers.json GET yo')
     }
 });
 
-// sends all unclaimed, untimedout offers
-app.get('/allOffers', function(req, res, next) {
-    res.send('all offers!');
+// UNTESTED
+// sends unclaimed, untimedout offers
+app.get('/openOffers', function(req, res, next) {
+    db.collection('offers', function(er, offers) {
+        assert.equal(er, null);
+        offers.find({}, {sort: [['created_at',-1]]}).toArray(function(err, log) {
+            assert.equal(null, err);
+            res.send(log);
+        });
+    });
 });
 
 
