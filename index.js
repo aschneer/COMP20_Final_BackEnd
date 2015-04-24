@@ -50,22 +50,24 @@ app.get('/', function(req, res, next) {
 
 // sends an offer to the database
 app.post('/sendOffer', function(req, res, next) {
+    var toInsert = {};
     var data = req.body;
     if (data.hasOwnProperty('provider') && data.hasOwnProperty('food') && data.hasOwnProperty('address') && data.hasOwnProperty('when')) {
-        var toInsert = {'provider': data.provider, 'food': data.food, 'address': data.address, 'when': data.when};
+        toInsert.provider = data.provider;
+        toInsert.food = data.food;
+        toInsert.address = data.address;
+        toInsert.when = data.when;
+        toInsert.quantity = 1;
+
+        if (data.hasOwnProperty('quantity') && (typeof data.quantity === number) && (data.quantity > 0)) {
+            toInsert.quantity = data.quantity;
+        }
 
         // Insert
-
-        // UNTESTED AT ALL; QUANTITY HANDLING WOULD MAKE THIS SIMPLER
         db.collection('offers', function(er, offers) {
             assert.equal(null, er);
             offers.findOne(toInsert, function(err, cursor) {
                 assert.equal(null, err);
-
-                // additional attributes for server manipulation but not order identification
-                toInsert.claimed = false;                
-                // maybe add quantity here?
-
                 if (!cursor) {
                     offers.insert(toInsert, function(errr, result) {
                         assert.equal(errr, null);
@@ -74,7 +76,7 @@ app.post('/sendOffer', function(req, res, next) {
                     });
                 } else {
                     offers.update(cursor, toInsert, function(errr) {
-                        assert.equal(errr, null);                      
+                        assert.equal(errr, null);
                     });
                 }
             });
@@ -88,83 +90,56 @@ app.post('/sendOffer', function(req, res, next) {
 // removes offer from unclaimed; adds it to claimed
 app.post('/claimOffer', function(req, res, next) {
     var data = req.body;
+    var toInsert = {};
+    toInsert.login = data.login;
+
     if (data.hasOwnProperty('_id') && data.hasOwnProperty('login')) {
-        var toInsert;
-        toInsert.login = data.login;
-
-        // UNTESTED AT ALL FROM HERE DOWN
-
-        // get _id'ed element
+        // Update offer in offers db
         db.collection('offers', function(er, offers) {
             assert.equal(er, null);
             offers.findOne({'_id': data._id}, function(err, offer) {
-                if (err) {
-                    res.send('bad offer yo')
-                } 
+                if (!err) {
+                    toInsert.provider = offer.provider;
+                    toInsert.address = offer.address;
+                    toInsert.food = offer.food;
+                    toInsert.address = offer.when;
 
-                toInsert.provider = offer.provider;
-                toInsert.address = offer.address;
-                toInsert.food = offer.food;
-                toInsert.address = offer.when;
-
-                if (offer.hasOwnProperty('quantity')) {
-                    if (offer.quantity >= 1) {
-                        // UPDATE IT HERE; needs logic
-                        var newQuantity = offer.quantity - 1;
-                        offers.update({'_id': data._id}, {'quantity': newQuantity}, function(errr){
-                            assert.equal(errr, null);
-                        });
-
-                    } else if (offer.quantity === 1) {
-                        // remove it here; needs logic
-                        offers.remove({'_id': data._id}, function(errr) {
+                    if (offer.quantity > 1) {
+                        offers.update({'_id': data._id}, {'quantity': (offer.quantity - 1)}, function(errr){
                             assert.equal(errr, null);
                         });
                     } else {
-                        res.send('bad offer yo');
+                        offers.remove({'_id': data._id}, function(errr) {   
+                            assert.equal(errr, null);
+                        });
                     }
-
                 } else {
-                    offers.remove({'_id': data._id}, function(errr) {
-                        assert.equal(errr, null);
-                    });
+                    res.status(300);
+                    res.send('Offer not found');
                 }
             });
         });
 
+        // insert into the claims db
         db.collection('claims', function(er, offers) {
             assert.equal(null, er);
-            claims.findOne(toInsert, function(err, cursor) {
-                assert.equal(null, err);
-
-                // additional attributes for server manipulation but not order identification
-                toInsert.claimed = false;                
-                // maybe add quantity here?
-
-                if (!cursor) {
-                    offers.insert(toInsert, function(errr, result) {
-                        assert.equal(errr, null);
-                        assert.equal(1, result.result.n);
-                        assert.equal(1, result.ops.length);
-                    });
-                } else {
-                    offers.update(cursor, toInsert, function(errr) {
-                        assert.equal(errr, null);                      
-                    });
-                }
+            claims.insert(toInsert, function(err, result) {
+                assert.equal(err, null);
+                assert.equal(1, result.result.n);
+                assert.equal(1, result.ops.length);
             });
         });
-
         res.sendStatus(200);
     } else {
+        res.status(300);
         res.send('bad claimOffer POST yo');
     }
 });
 
-// returns list of claimed offers for a specific login
+// returns list of claimed offers for a specific login or all offers
 app.get('/userOffers', function(req, res, next) {
     var query = req.query;
-    if (data.hasOwnProperty('login')) {
+    if (query.hasOwnProperty('login')) {
         db.collection('claims', function(er, offers) {
             assert.equal(er, null);
             offers.find({'login': query.login}, {sort: [['when',-1]]}).toArray(function(err, log) {
@@ -173,7 +148,13 @@ app.get('/userOffers', function(req, res, next) {
             });
         });
     } else {
-        res.send('bad myOffers GET yo');
+        db.collection('offers', function(er, offers) {
+            assert.equal(er, null);
+            offers.find({}, {sort: [['when',-1]]}).toArray(function(err, log) {
+                assert.equal(null, err);
+                res.send(log);
+            });
+        });
     }
 });
 
@@ -202,18 +183,5 @@ app.get('/providerOffers', function(req, res, next) {
         res.send('bad unclaimedOffers.json GET yo')
     }
 });
-
-// UNTESTED
-// sends unclaimed, untimedout offers
-app.get('/openOffers', function(req, res, next) {
-    db.collection('offers', function(er, offers) {
-        assert.equal(er, null);
-        offers.find({}, {sort: [['created_at',-1]]}).toArray(function(err, log) {
-            assert.equal(null, err);
-            res.send(log);
-        });
-    });
-});
-
 
 app.listen(app.get('port'));
