@@ -10,6 +10,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 var mongoUri = process.env.MONGOLAB_URI || process.env.MONGOHQ_URL || 'mongodb://localhost:27017/';
+var db;
 var MongoClient = require('mongodb').MongoClient;
 MongoClient.connect(mongoUri, function(er, connection) {
     assert.equal(null, er);
@@ -24,28 +25,29 @@ app.use(function(req, res, next) {
 
 app.get('/', function(req, res, next) {
     res.set('Content-Type', 'text/html');
-    var page = '<!DOCTYPE HTML><html>';
-    page += '<head style="margin:0 0;width:100%;height:100%;">';
-    page += '<title>Web Programming Spring 2015 Team 3 Food db</title>';
-    page += '</head>';
-    page += '<body style="background:#444444;width:600px;height:100%;margin:0 auto;">';
-    page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Food Offers Logged</h1>';
     db.collection('offers', function(er, offers) {
-        // assert.equal(er, null);
-        offers.find({}, {limit:20 /*, sort: [['created_at',-1]]*/}).toArray(function(err, log) {
-            // assert.equal(null, err);
+        assert.equal(er, null);
+        offers.find().toArray(function(err, log) {
+            assert.equal(null, err);
+
+            var page = '<!DOCTYPE HTML><html>';
+            page += '<head style="margin:0 0;width:100%;height:100%;">';
+            page += '<title>Web Programming Spring 2015 Team 3 Food db</title>';
+            page += '</head>';
+            page += '<body style="background:#444444;width:600px;height:100%;margin:0 auto;">';
+            page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Food Offers Logged</h1>';
             page += '<ol>'
             for (var i = 0; i < log.length; i++) {
                 s = '<span style="color:#e67e22">' + log[i].provider + '</span> ';
-                s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ' 
+                s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ';
                 s += 'at <span style="color:#27ae60">' + log[i].address + '</span>'; 
                 page += '<li>' + s + '</li>';
             }
-            page += '</ol>'
+            page += '</ol>';
+            page += "</body></html>";
+            res.send(page);
         });
     });
-    page += "</body></html>";    
-    res.send(page);
 });
 
 // sends an offer to the database
@@ -59,17 +61,18 @@ app.post('/sendOffer', function(req, res, next) {
         toInsert.when = data.when;
         toInsert.quantity = 1;
 
-        if (data.hasOwnProperty('quantity') && (typeof data.quantity === number) && (data.quantity > 0)) {
-            toInsert.quantity = data.quantity;
+        if (data.hasOwnProperty('quantity') && !isNaN(data.quantity) && (data.quantity > 0)) {
+            toInsert.quantity = parseInt(data.quantity);
         }
-
-        // Insert
+        console.log('inserting');
         db.collection('offers', function(er, offers) {
             assert.equal(null, er);
             offers.findOne(toInsert, function(err, cursor) {
                 assert.equal(null, err);
+                console.log(cursor);
                 if (!cursor) {
                     offers.insert(toInsert, function(errr, result) {
+                        console.log('inserted');
                         assert.equal(errr, null);
                         assert.equal(1, result.result.n);
                         assert.equal(1, result.ops.length);
