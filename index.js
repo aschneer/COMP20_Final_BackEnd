@@ -24,19 +24,21 @@ app.use(function(req, res, next) {
 });
 
 app.get('/', function(req, res, next) {
+    var page;
+    page = '<!DOCTYPE HTML><html>';
+    page += '<head style="margin:0 0;width:100%;height:100%;">';
+    page += '<title>Web Programming Spring 2015 Team 3 Food db</title>';
+    page += '</head>';
+    page += '<body style="background:#444444;width:600px;height:100%;margin:0 auto;">';
     res.set('Content-Type', 'text/html');
+
     db.collection('offers', function(er, offers) {
         assert.equal(er, null);
         offers.find().toArray(function(err, log) {
             assert.equal(null, err);
 
-            var page = '<!DOCTYPE HTML><html>';
-            page += '<head style="margin:0 0;width:100%;height:100%;">';
-            page += '<title>Web Programming Spring 2015 Team 3 Food db</title>';
-            page += '</head>';
-            page += '<body style="background:#444444;width:600px;height:100%;margin:0 auto;">';
             page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Food Offers Logged</h1>';
-            page += '<ol>'
+            page += '<ol>';
             for (var i = 0; i < log.length; i++) {
                 s = '<span style="color:#e67e22">' + log[i].provider + '</span> ';
                 s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ';
@@ -44,8 +46,44 @@ app.get('/', function(req, res, next) {
                 page += '<li>' + s + '</li>';
             }
             page += '</ol>';
-            page += "</body></html>";
-            res.send(page);
+
+            // Add in Claims
+            db.collection('claims', function(er, claims) {
+                assert.equal(er, null);
+                claims.find().toArray(function(err, log) {
+                    assert.equal(null, err);
+
+                    page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Claims claimed</h1>';
+                    page += '<ol>';
+                    for (var i = 0; i < log.length; i++) {
+                        s = 'user <span style="color:#e67e22">' + log[i].login + '</span> ';
+                        s = '<span style="color:#e67e22">' + log[i].provider + '</span> ';
+                        s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ';
+                        s += 'at <span style="color:#27ae60">' + log[i].address + '</span>'; 
+                        page += '<li>' + s + '</li>';
+                    }
+                    page += '</ol>';
+
+                    // Add in Users
+                    db.collection('users', function(er, users) {
+                        assert.equal(er, null);
+                        users.find().toArray(function(err, log) {
+                            assert.equal(null, err);
+
+                            page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Users Signed Up</h1>';
+                            page += '<ol>';
+                            for (var i = 0; i < log.length; i++) {
+                                s = 'user <span style="color:#e67e22">' + log[i].username + '</span> ';
+                                s += 'with name <span style="color:#e74c3c">' + log[i].name + '</span> ';
+                                page += '<li>' + s + '</li>';
+                            }
+                            page += '</ol>';
+                            page += "</body></html>";
+                            res.send(page);
+                        });
+                    });
+                });
+            });
         });
     });
 });
@@ -64,15 +102,12 @@ app.post('/sendOffer', function(req, res, next) {
         if (data.hasOwnProperty('quantity') && !isNaN(data.quantity) && (data.quantity > 0)) {
             toInsert.quantity = parseInt(data.quantity);
         }
-        console.log('inserting');
         db.collection('offers', function(er, offers) {
             assert.equal(null, er);
             offers.findOne(toInsert, function(err, cursor) {
                 assert.equal(null, err);
-                console.log(cursor);
                 if (!cursor) {
                     offers.insert(toInsert, function(errr, result) {
-                        console.log('inserted');
                         assert.equal(errr, null);
                         assert.equal(1, result.result.n);
                         assert.equal(1, result.ops.length);
@@ -184,6 +219,120 @@ app.get('/providerOffers', function(req, res, next) {
         }
     } else {
         res.send('bad unclaimedOffers.json GET yo')
+    }
+});
+
+// 
+app.post('/signUp', function(req, res, next) {
+    var toInsert = {};
+    var data = req.body;
+    if (data.hasOwnProperty('username') && data.hasOwnProperty('name') && data.hasOwnProperty('email') && data.hasOwnProperty('password')) {
+        if (!validator.isAlpha(data.name.replace(/\s+/g, ''))) {
+            res.status(400);
+            res.send("Error: name can only contain letters.");
+        } else if (!validator.isEmail(data.email)) {
+            res.status(400);
+            res.send("Error: invalid email address.");
+        } else {
+            toInsert.username = data.username; 
+            toInsert.name = data.name;
+            toInsert.password = data.password;
+            toInsert.email = data.email;
+            toInsert.phone = data.phone;
+
+            db.collection('users', function(er, users) {
+                assert.equal(null, er);
+                users.findOne({"username": toInsert.username}, function(err, cursor) {
+                    assert.equal(null, err);
+                    if (!cursor) {
+                        users.insert(toInsert, function(errr, result) {
+                            assert.equal(errr, null);
+                            assert.equal(1, result.result.n);
+                            assert.equal(1, result.ops.length);
+                        });
+                    } else {
+                        res.status('400');
+                        res.send('Username already exists');
+                    }
+                });
+            });
+        }
+    } else {
+        res.status(400);
+        res.send("Error: One or more missing input fields.");
+    }
+});
+
+app.post('/signIn', function(req, res, next) {
+    var data = req.body;
+    if (data.hasOwnProperty('username') && data.hasOwnProperty('password')) {
+        // Update offer in offers db
+        db.collection('users', function(er, users) {
+            assert.equal(er, null);
+            users.findOne({'username': data.username, 'password': data.password }, function(err, user) {
+                if (!err && user) {
+                    res.sendStatus(200);
+                } else {
+                    res.status(500);
+                    res.send('Error: invalid username or password.');
+                }
+            });
+        });
+    } else {
+        res.status(300);
+        res.send('Error: please provide a username and password.');
+    }
+});
+
+// Route to clear database.
+app.get("/dbClear",function(req,res){
+    //Grab route query parameters.
+    res.set("Content-Type","text/html");
+    var data = req.query;
+    if (data.hasOwnProperty('password') && data.hasOwnProperty('collection')) {
+        if (data.password === "mingodb") {
+            if ((data.collection === 'users') || (data.collection === 'offers') || (data.collection === 'claims')) {
+                db.collection(data.collection, function(er, coll){
+                    assert.equal(null, er);
+                    coll.remove({}, {}, function(err) {
+                        assert.equal(null, err);
+                        res.status(200);
+                        res.send("Success: '" + data.collection + "' collection cleared.");
+                    });
+                });
+            } else if (data.collection === 'all') {
+                db.collection('users', function(er, coll){
+                    assert.equal(null, er);
+                    coll.remove({}, {}, function(err) {
+                        assert.equal(null, err);
+                        db.collection('offers', function(er, coll){
+                            assert.equal(null, er);
+                            coll.remove({}, {}, function(err) {
+                                assert.equal(null, err);
+                                db.collection('claims', function(er, coll){
+                                    assert.equal(null, er);
+                                    coll.remove({}, {}, function(err) {
+                                        assert.equal(null, err);
+                                        res.status(200);
+                                        res.send("Success: users, claims, and offers collections cleared.");
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            }
+            else {
+                res.status(404);
+                res.send("Error: Collection does not exist.");
+            }
+        } else {
+            res.status(403);
+            res.send("Error: Access denied.");            
+        }
+    } else {
+        res.status(400);
+        res.send("Error: Invalid fields.");
     }
 });
 
