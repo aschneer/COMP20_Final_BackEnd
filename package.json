@@ -11,10 +11,11 @@
     "url": "https://github.com/tuftsdev/comp20-spring2015-team3.git"
   },
   "dependencies": {
-      "express": "latest",
-      "mongodb": "latest",
-      "body-parser": "latest",
-      "validator":"latest"
+    "body-parser": "latest",
+    "express": "latest",
+    "mongodb": "latest",
+    "sendgrid": "^1.7.0",
+    "validator": "latest"
   },
   "author": "Andrew Schneer, Sibonay Koo, Barry Maswan, Hunter Wapman",
   "license": "MIT",

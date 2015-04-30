@@ -2,6 +2,7 @@ var express = require('express');
 var assert = require('assert');
 var bodyParser = require('body-parser');
 var validator = require('validator');
+var sendgrid = require('sendgrid')('hunter-', 'mingodb20');
 
 var app = express();
 app.set('port', (process.env.PORT || 5000));
@@ -23,6 +24,16 @@ var validateQuantity = function(data) {
     } else {
         return 1;
     }
+};
+
+var sendEmail = function(email_to, sub, text) {
+    var payload = {
+        to      :  email_to,
+        from    : 'foodaroundcomp20@gmail.com',
+        subject : sub,
+        text    : text
+    }
+    sendgrid.send(payload);
 };
 
 app.use(function(req, res, next) {
@@ -124,6 +135,8 @@ app.post('/sendOffer', function(req, res, next) {
                                     assert.equal(errr, null);
                                     assert.equal(1, result.result.n);
                                     assert.equal(1, result.ops.length);
+
+                                    sendEmail(user.email, 'New FoodAround Offer Posted', 'Offer item' + toInsert.food + ' ready at ' + toInsert.when + ' is now on FoodAround.');
                                 });
                             } else {
                                 offers.update(cursor, toInsert, function(errr) {
@@ -190,6 +203,8 @@ app.post('/claimOffer', function(req, res, next) {
                                             assert.equal(errrrr, null);
                                             assert.equal(1, result.result.n);
                                             assert.equal(1, result.ops.length);
+
+                                            sendEmail(user.email, 'You Claimed a FoodAround Offer!', 'Offer item ' + toInsert.food + ' ready at ' + toInsert.when + ' posted by' + toInsert.seller + ' claimed .');
                                         });
                                     });
                                     res.sendStatus(200);
@@ -302,6 +317,8 @@ app.post('/signUp', function(req, res, next) {
                             assert.equal(errr, null);
                             assert.equal(1, result.result.n);
                             assert.equal(1, result.ops.length);
+
+                            sendEmail(toInsert.email, 'New FoodAround Account', 'Username ' + toInsert.username + ' is now on FoodAround.');
                         });
                     } else {
                         res.status('400');
