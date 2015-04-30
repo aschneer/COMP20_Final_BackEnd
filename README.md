@@ -80,11 +80,7 @@ Status
     - Written
         - /sendOffer
         - /claimOffer
-        - /userOffers
-        - /providerOffers
+        - /offers
         - /dbClear
         - /signUp
         - /signIn
-    - Untested
-        - /userOffers
-        - /providerOffers

@@ -67,8 +67,8 @@ app.get('/', function(req, res, next) {
                     page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Claims claimed</h1>';
                     page += '<ol>';
                     for (var i = 0; i < log.length; i++) {
-                        s = 'buyer <span style="color:#e67e22">' + log[i].buyer + '</span> ';
-                        s = '<span style="color:#e67e22">' + log[i].seller + '</span> ';
+                        s = 'seller <span style="color:#e67e22">' + log[i].seller + '</span> ';
+                        s += 'buyer <span style="color:#e67e22">' + log[i].buyer + '</span> ';
                         s += 'claimed <span style="color:#e74c3c">' + log[i].food + '</span> ';
                         s += 'at <span style="color:#27ae60">' + log[i].address + '</span>'; 
                         page += '<li>' + s + '</li>';
