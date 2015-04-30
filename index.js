@@ -51,7 +51,6 @@ app.get('/', function(req, res, next) {
                 s = '<span style="color:#e67e22">' + log[i].seller + '</span> ';
                 s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ';
                 s += 'at <span style="color:#27ae60">' + log[i].address + '</span> '; 
-                s += 'id <span style="color:#27ae60">' + log[i]._id + '</span> '; 
                 s += 'quantity <span style="color:#27ae60">' + log[i].quantity + '</span> '; 
                 s += 'ready at <span style="color:#27ae60">' + log[i].when + '</span>'; 
                 page += '<li>' + s + '</li>';
