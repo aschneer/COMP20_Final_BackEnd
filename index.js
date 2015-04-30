@@ -200,7 +200,7 @@ app.post('/claimOffer', function(req, res, next) {
                                         toInsert.quantity = validateQuantity(data);
 
                                         claims.insert(toInsert, function(errrrr, result) {
-                                            assert.equal(errrrr, null);
+                                            assert.equal(null, errrrr);
                                             assert.equal(1, result.result.n);
                                             assert.equal(1, result.ops.length);
 
