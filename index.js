@@ -17,6 +17,14 @@ MongoClient.connect(mongoUri, function(er, connection) {
     db = connection;
 });
 
+var validateQuantity = function(data) {
+    if (data.hasOwnProperty('quantity') && !isNaN(data.quantity) && (data.quantity > 0)) {
+        return parseInt(data.quantity);
+    } else {
+        return 1;
+    }
+};
+
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -40,9 +48,12 @@ app.get('/', function(req, res, next) {
             page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Food Offers Logged</h1>';
             page += '<ol>';
             for (var i = 0; i < log.length; i++) {
-                s = '<span style="color:#e67e22">' + log[i].provider + '</span> ';
+                s = '<span style="color:#e67e22">' + log[i].seller + '</span> ';
                 s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ';
-                s += 'at <span style="color:#27ae60">' + log[i].address + '</span>'; 
+                s += 'at <span style="color:#27ae60">' + log[i].address + '</span> '; 
+                s += 'id <span style="color:#27ae60">' + log[i]._id + '</span> '; 
+                s += 'quantity <span style="color:#27ae60">' + log[i].quantity + '</span> '; 
+                s += 'ready at <span style="color:#27ae60">' + log[i].when + '</span>'; 
                 page += '<li>' + s + '</li>';
             }
             page += '</ol>';
@@ -56,9 +67,9 @@ app.get('/', function(req, res, next) {
                     page += '<h1 style="width:100%;padding-top:1rem;margin:0 auto;">Claims claimed</h1>';
                     page += '<ol>';
                     for (var i = 0; i < log.length; i++) {
-                        s = 'user <span style="color:#e67e22">' + log[i].login + '</span> ';
-                        s = '<span style="color:#e67e22">' + log[i].provider + '</span> ';
-                        s += 'offered <span style="color:#e74c3c">' + log[i].food + '</span> ';
+                        s = 'buyer <span style="color:#e67e22">' + log[i].buyer + '</span> ';
+                        s = '<span style="color:#e67e22">' + log[i].seller + '</span> ';
+                        s += 'claimed <span style="color:#e74c3c">' + log[i].food + '</span> ';
                         s += 'at <span style="color:#27ae60">' + log[i].address + '</span>'; 
                         page += '<li>' + s + '</li>';
                     }
@@ -92,35 +103,42 @@ app.get('/', function(req, res, next) {
 app.post('/sendOffer', function(req, res, next) {
     var toInsert = {};
     var data = req.body;
-    if (data.hasOwnProperty('provider') && data.hasOwnProperty('food') && data.hasOwnProperty('address') && data.hasOwnProperty('when')) {
-        toInsert.provider = data.provider;
+    if (data.hasOwnProperty('seller') && data.hasOwnProperty('food') && data.hasOwnProperty('address') && data.hasOwnProperty('when')) {
+        toInsert.seller = data.seller;
         toInsert.food = data.food;
         toInsert.address = data.address;
         toInsert.when = data.when;
-        toInsert.quantity = 1;
+        toInsert.quantity = validateQuantity(data);
 
-        if (data.hasOwnProperty('quantity') && !isNaN(data.quantity) && (data.quantity > 0)) {
-            toInsert.quantity = parseInt(data.quantity);
-        }
-        db.collection('offers', function(er, offers) {
-            assert.equal(null, er);
-            offers.findOne(toInsert, function(err, cursor) {
-                assert.equal(null, err);
-                if (!cursor) {
-                    offers.insert(toInsert, function(errr, result) {
-                        assert.equal(errr, null);
-                        assert.equal(1, result.result.n);
-                        assert.equal(1, result.ops.length);
-                    });
+        db.collection('users', function(er, users) {
+            users.findOne({'username': data.seller }, function(err, user) {
+                if (err || !user) {
+                    res.status(404);
+                    res.send('Username not found');
                 } else {
-                    offers.update(cursor, toInsert, function(errr) {
-                        assert.equal(errr, null);
+                    db.collection('offers', function(er, offers) {
+                        assert.equal(null, er);
+                        offers.findOne(toInsert, function(err, cursor) {
+                            assert.equal(null, err);
+                            if (!cursor) {
+                                offers.insert(toInsert, function(errr, result) {
+                                    assert.equal(errr, null);
+                                    assert.equal(1, result.result.n);
+                                    assert.equal(1, result.ops.length);
+                                });
+                            } else {
+                                offers.update(cursor, toInsert, function(errr) {
+                                    assert.equal(errr, null);
+                                });
+                            }
+                        });
                     });
+                    res.sendStatus(200);
                 }
             });
         });
-        res.sendStatus(200);
     } else {
+        res.status(400);
         res.send('bad sendOffer POST yo');
     }
 });
@@ -129,96 +147,132 @@ app.post('/sendOffer', function(req, res, next) {
 app.post('/claimOffer', function(req, res, next) {
     var data = req.body;
     var toInsert = {};
-    toInsert.login = data.login;
 
-    if (data.hasOwnProperty('_id') && data.hasOwnProperty('login')) {
-        // Update offer in offers db
-        db.collection('offers', function(er, offers) {
-            assert.equal(er, null);
-            offers.findOne({'_id': data._id}, function(err, offer) {
-                if (!err) {
-                    toInsert.provider = offer.provider;
-                    toInsert.address = offer.address;
-                    toInsert.food = offer.food;
-                    toInsert.address = offer.when;
-
-                    if (offer.quantity > 1) {
-                        offers.update({'_id': data._id}, {'quantity': (offer.quantity - 1)}, function(errr){
-                            assert.equal(errr, null);
-                        });
-                    } else {
-                        offers.remove({'_id': data._id}, function(errr) {   
-                            assert.equal(errr, null);
-                        });
-                    }
+    if (data.hasOwnProperty('_id') && data.hasOwnProperty('buyer')) {
+        db.collection('users', function(er, users) {
+            users.findOne({'username': data.buyer }, function(err, user) {
+                if (err || !user) {
+                    res.status(404);
+                    res.send('Username not found');
                 } else {
-                    res.status(300);
-                    res.send('Offer not found');
+                    // Update offer in offers db
+                    db.collection('offers', function(errr, offers) {
+                        assert.equal(errr, null);
+                        offers.find({}).toArray(function(errrr, cursor) {
+                            assert.equal(errrr, null);
+                            var found = false;
+                            for (var i = 0; i < cursor.length; i++) {
+                                if (cursor[i]._id == data._id) {
+                                    var offer = cursor[i];
+                                    found = true;
+                                    toInsert.seller     = offer.seller;
+                                    toInsert.address    = offer.address;
+                                    toInsert.food       = offer.food;
+                                    toInsert.when       = offer.when;
+
+                                    if (offer.quantity > 1) {
+                                        toInsert.quantity = offer.quantity - 1;
+                                        offers.update({_id: offer._id}, toInsert, function(errrrr){
+                                            assert.equal(errrrr, null);
+                                        });
+                                    } else {
+                                        offers.remove(offer, function(errrr) {   
+                                            assert.equal(errrr, null);
+                                        });
+                                    }
+
+                                    // insert into the claims db
+                                    db.collection('claims', function(errrr, claims) {
+                                        assert.equal(null, errrr);
+                                        toInsert.buyer = data.buyer;
+                                        toInsert.quantity = validateQuantity(data);
+
+                                        claims.insert(toInsert, function(errrrr, result) {
+                                            assert.equal(errrrr, null);
+                                            assert.equal(1, result.result.n);
+                                            assert.equal(1, result.ops.length);
+                                        });
+                                    });
+                                    res.sendStatus(200);
+                                }
+                            }
+
+                            if (!found) {
+                                res.status(404);
+                                res.send('Offer not found');
+                            }
+                        });
+                    });
                 }
             });
         });
-
-        // insert into the claims db
-        db.collection('claims', function(er, offers) {
-            assert.equal(null, er);
-            claims.insert(toInsert, function(err, result) {
-                assert.equal(err, null);
-                assert.equal(1, result.result.n);
-                assert.equal(1, result.ops.length);
-            });
-        });
-        res.sendStatus(200);
     } else {
-        res.status(300);
+        res.status(400);
         res.send('bad claimOffer POST yo');
     }
 });
 
 // returns list of claimed offers for a specific login or all offers
-app.get('/userOffers', function(req, res, next) {
+//
+// MUST DELETE OUTDATED STUFF HERE
+app.get('/offers', function(req, res, next) {
     var query = req.query;
-    if (query.hasOwnProperty('login')) {
-        db.collection('claims', function(er, offers) {
-            assert.equal(er, null);
-            offers.find({'login': query.login}, {sort: [['when',-1]]}).toArray(function(err, log) {
-                assert.equal(null, err);
-                res.send(log);
-            });
-        });
-    } else {
-        db.collection('offers', function(er, offers) {
-            assert.equal(er, null);
-            offers.find({}, {sort: [['when',-1]]}).toArray(function(err, log) {
-                assert.equal(null, err);
-                res.send(log);
-            });
-        });
-    }
-});
-
-// returns the untimedout offers for a specific provider, either claimed or unclaimed
-app.get('/providerOffers', function(req, res, next) {
-    var query = req.query;
-    if (query.hasOwnProperty('provider') && query.hasOwnProperty('claimed')) {
-        if (query.claimed === true) {
-            db.collection('claims', function(er, offers) {
-                assert.equal(er, null);
-                offers.find({'provider': query.provider}, {sort: [['when',-1]]}).toArray(function(err, log) {
-                    assert.equal(null, err);
-                    res.send(log);
+    if (query.hasOwnProperty('mode') && query.hasOwnProperty('claimed')) {
+        if (query.mode === "buy") {
+            if (query.claimed === "true") {
+                if (query.hasOwnProperty('username')) {
+                    // SEND ALL OFFERS CLAIMED BY USER
+                    db.collection('claims', function(er, claims) {
+                        assert.equal(er, null);
+                        claims.find({'buyer': query.username}).toArray(function(err, log) {
+                            assert.equal(null, err);
+                            res.send(log);
+                        });
+                    });
+                } else {
+                    res.status(400);
+                    res.send("Error: must provide username for claimed offers in buy mode");
+                }
+            } else {
+                // SEND ALL OFFERS
+                db.collection('offers', function(er, offers) {
+                    assert.equal(er, null);
+                    offers.find({}).toArray(function(err, log) {
+                        assert.equal(null, err);
+                        res.send(log);
+                    });
                 });
-            });
-        } else {
-            db.collection('offers', function(er, offers) {
-                assert.equal(er, null);
-                offers.find({'provider': query.provider}, {sort: [['when',-1]]}).toArray(function(err, log) {
-                    assert.equal(null, err);
-                    res.send(log);
-                });
-            });
+            }
+        } else { // SELL
+            if (query.hasOwnProperty('username')) {
+                if (query.claimed === "true") {
+                    // SEND ALL OFFERS POSTED BY USER, CLAIMED
+                    db.collection('claims', function(er, claims) {
+                        assert.equal(er, null);
+                        claims.find({'seller': query.username}).toArray(function(err, log) {
+                            assert.equal(null, err);
+                            res.send(log);
+                        });
+                    });
+                } else {
+                    // SEND ALL OFFERS POSTED BY USER
+                    db.collection('offers', function(er, offers) {
+                        assert.equal(er, null);
+                        offers.find({'seller': query.username }).toArray(function(err, log) {
+                            assert.equal(null, err);
+                            res.send(log);
+                        });
+                    });
+                    
+                }
+            } else {
+                res.status(400);
+                res.send("Error: must provide username for offers in sell mode");
+            }
         }
     } else {
-        res.send('bad unclaimedOffers.json GET yo')
+        res.status(400);
+        res.send('Error: must provide mode and claimed status.');
     }
 });
 

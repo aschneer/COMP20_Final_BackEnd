@@ -5,29 +5,32 @@ Server
             - '/sendOffer'
                 - POST
                 - parameters:
-                    - {"provider":string, "food":string, "address":string, "when":Date}
+                    - {"seller":string, "food":string, "address":string, "when":Date}
                 - returns:
                     - 200 if OK!
-                    - 300 if BAD!
+                    - 400 if BAD!
             - '/claimOffer'
                 - POST
                 - paramters:
-                    - {"_id":_id, "login":login}
+                    - {"_id":string, "buyer":string}
                 - returns:
                     - 200 if OK!
-                    - 300 if BAD!
+                    - 400 if BAD!
         - query routes:
-            - '/userOffers?login=name'
+            - '/offers?mode={buy || sell}&claimed={true || false}&username=string'
                 - GET
-                - if login:
-                    - returns all offers claimed by a given login
-                - else:
-                    - returns all open offers
-                - return format:
-                    [{"provider":string, "food":string, "address":string, "when":Date}, ...]
-            - '/providerOffers?provider=name&claimed=bool'
-                - GET
-                - returns all offers for a provider, claimed and unclaimed
+                - mode[BUY], claimed[TRUE], username REQUIRED
+                    - returns offers claimed buy the user
+                    - ['buyer':string, 'seller':string, 'address':string, 'food':string, 'when':string]
+                - mode[BUY], claimed[FALSE], username OPTIONAL
+                    - returns all unclaimed offers
+                    - [seller':string, 'address':string, 'food':string, 'when':string]
+                - mode[SELL], claimed[TRUE], username REQUIRED
+                    - returns claimed offers posted by the user
+                    - ['buyer':string, 'seller':string, 'address':string, 'food':string, 'when':string]
+                - mode[SELL], claimed[FALSE], username REQUIRED
+                    - returns all unclaimed offers posted by the user
+                    - [seller':string, 'address':string, 'food':string, 'when':string]
         - user routes:
             - '/signUp'
                 - POST
@@ -58,17 +61,17 @@ Server
             - Holds Provider-Posted Offers
             - Parameters
                 - Mandatory:
-                    [ provider:string, food:string, address:string, when:string ]
+                    [ seller:string, food:string, address:string, when:string ]
                 - Optional:
                     [ quantity:number ]
         - users
             - Holds user account information (no distinction between usertypes)
             - Parameters:
-                - [ username:string, name:string, email:string, phone:string, password:string ]
+                - [ username:string, name:string, email:string, password:string ]
         - claims
             - Holds User-Claimed Offers
             - Parameters:
-                - [ login:string, provider:string, food:string, address:string, when:string ]
+                - [ buyer:string, seller:string, food:string, address:string, when:string ]
 
 Status
 
